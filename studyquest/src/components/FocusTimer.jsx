@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Timer, Zap, Target, CheckCircle, Coffee, Clock } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, Target, CheckCircle, Coffee, Clock, Star } from 'lucide-react';
+
+const XP_PER_SESSION = 10;
+const XP_LEVELS = [0, 20, 50, 100, 200, 400, 800, 1600];
 
 export default function FocusTimer() {
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
@@ -7,9 +10,14 @@ export default function FocusTimer() {
   const [isBreak, setIsBreak] = useState(false);
   const [sessions, setSessions] = useState(0);
   const [xp, setXp] = useState(0);
+  const [showReward, setShowReward] = useState(false);
 
   const focusTime = 25 * 60; // 25 minutes
   const breakTime = 5 * 60; // 5 minutes
+
+  // Level calculation
+  const level = XP_LEVELS.findIndex((thresh, i) => xp < (XP_LEVELS[i + 1] ?? Infinity));
+  const nextLevelXp = XP_LEVELS[level + 1] ?? (xp + 100);
 
   useEffect(() => {
     let interval = null;
@@ -18,15 +26,14 @@ export default function FocusTimer() {
         setTimeLeft(timeLeft - 1);
       }, 1000);
     } else if (timeLeft === 0) {
-      // Session completed
       if (!isBreak) {
-        // Focus session completed
         setSessions(sessions + 1);
-        setXp(xp + 10); // Award 10 XP for completed focus session
+        setXp(xp + XP_PER_SESSION);
+        setShowReward(true);
+        setTimeout(() => setShowReward(false), 2000);
         setIsBreak(true);
         setTimeLeft(breakTime);
       } else {
-        // Break completed
         setIsBreak(false);
         setTimeLeft(focusTime);
         setIsActive(false);
@@ -54,175 +61,115 @@ export default function FocusTimer() {
   const progress = ((focusTime - timeLeft) / focusTime) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto p-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-purple-900 bg-clip-text text-transparent mb-6">
-            Focus Mode
-          </h1>
-          <p className="text-slate-600 text-xl">Stay focused, earn XP, level up your productivity</p>
-        </div>
-
-        <div className="grid grid-cols-12 gap-8">
-          {/* Main Timer Section */}
-          <div className="col-span-12 lg:col-span-8">
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-12">
-              {/* Timer Display */}
-              <div className="text-center mb-12">
-                <div className="relative inline-block">
-                  <div className="w-80 h-80 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-2xl mb-8">
-                    <div className="w-72 h-72 bg-white rounded-full flex items-center justify-center">
-                      <div className="text-center">
-                        <div className={`text-8xl font-bold ${isBreak ? 'text-orange-600' : 'text-slate-900'}`}>
-                          {formatTime(timeLeft)}
-                        </div>
-                        <div className={`text-2xl font-medium mt-4 ${isBreak ? 'text-orange-500' : 'text-slate-600'}`}>
-                          {isBreak ? 'Break Time' : 'Focus Time'}
-                        </div>
-                      </div>
-                    </div>
+    <div className="w-screen h-screen bg-sq-gradient flex items-center justify-center overflow-hidden font-inter">
+      <div className="w-[1200px] h-[700px] bg-white/40 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/30 flex flex-row gap-12 p-12 relative">
+        {/* Sidebar */}
+        <aside className="w-[320px] h-full flex flex-col gap-8 pr-6 border-r border-white/30">
+          {/* Level Badge */}
+          <div className="flex flex-col items-center gap-2 mb-4">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-sqyellow to-sqviolet shadow-lg flex items-center justify-center text-4xl font-extrabold text-white border-4 border-white select-none">
+              {level}
+            </div>
+            <span className="text-sqviolet-dark text-lg font-bold">Level</span>
+          </div>
+          {/* XP Card */}
+          <div className="bg-gradient-to-br from-sqyellow-light/80 to-sqpink-light/80 rounded-2xl shadow-lg p-8 flex flex-col items-center">
+            <Zap className="w-10 h-10 text-white mb-2" />
+            <div className="text-5xl font-extrabold text-white drop-shadow mb-1">{xp}</div>
+            <div className="text-lg text-white/90 font-medium">Focus XP</div>
+          </div>
+          {/* Sessions Card */}
+          <div className="bg-gradient-to-br from-sqgreen-light/80 to-sqyellow-light/80 rounded-2xl shadow-lg p-8 flex flex-col items-center">
+            <CheckCircle className="w-10 h-10 text-white mb-2" />
+            <div className="text-5xl font-extrabold text-white drop-shadow mb-1">{sessions}</div>
+            <div className="text-lg text-white/90 font-medium">Sessions</div>
+          </div>
+          {/* Tips Card */}
+          <div className="bg-gradient-to-br from-sqblue-light/80 to-sqviolet-light/80 rounded-2xl shadow-lg p-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Coffee className="w-7 h-7 text-sqviolet" />
+              <span className="text-xl font-semibold text-sqviolet-dark">Focus Tips</span>
+            </div>
+            <ul className="space-y-3 text-sqviolet-dark/90 text-base font-medium pl-2">
+              <li>• Find a quiet, distraction-free environment</li>
+              <li>• Use the break time to stretch and refresh</li>
+              <li>• Stay hydrated and take deep breaths</li>
+              <li>• Close unnecessary browser tabs</li>
+            </ul>
+          </div>
+        </aside>
+        {/* Main Timer Area */}
+        <main className="flex-1 flex flex-col items-center justify-center relative">
+          {/* Animated XP Reward */}
+          {showReward && (
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center animate-bounce">
+              <div className="px-8 py-4 bg-gradient-to-r from-sqyellow to-sqpink text-white text-3xl font-extrabold rounded-2xl shadow-xl flex items-center gap-3 border-4 border-white">
+                <Star className="w-8 h-8 text-white" /> +{XP_PER_SESSION} XP!
+              </div>
+            </div>
+          )}
+          {/* Timer Display */}
+          <div className="relative flex flex-col items-center mb-12">
+            <div className="w-[340px] h-[340px] bg-gradient-to-br from-sqblue to-sqviolet rounded-full flex items-center justify-center shadow-2xl border-8 border-white/30">
+              <div className="w-[290px] h-[290px] bg-white/80 rounded-full flex items-center justify-center shadow-inner">
+                <div className="text-center">
+                  <div className={`text-[5rem] font-extrabold tracking-tight ${isBreak ? 'text-sqyellow' : 'text-sqviolet-dark'} drop-shadow-lg`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    {formatTime(timeLeft)}
                   </div>
-                  
-                  {/* Progress Ring */}
-                  <svg className="absolute inset-0 w-80 h-80 transform -rotate-90" viewBox="0 0 320 320">
-                    <circle
-                      cx="160"
-                      cy="160"
-                      r="150"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="12"
-                      className="text-slate-200"
-                    />
-                    <circle
-                      cx="160"
-                      cy="160"
-                      r="150"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="12"
-                      strokeDasharray={`${2 * Math.PI * 150}`}
-                      strokeDashoffset={`${2 * Math.PI * 150 * (1 - progress / 100)}`}
-                      className={`transition-all duration-1000 ease-out ${isBreak ? 'text-orange-500' : 'text-blue-500'}`}
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Controls */}
-              <div className="flex justify-center gap-6 mb-8">
-                <button
-                  onClick={toggleTimer}
-                  className={`px-12 py-6 rounded-2xl font-semibold transition-all duration-300 flex items-center gap-3 text-lg ${
-                    isActive
-                      ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl'
-                      : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl'
-                  }`}
-                >
-                  {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-                  {isActive ? 'Pause Session' : 'Start Focus Session'}
-                </button>
-                <button
-                  onClick={resetTimer}
-                  className="px-12 py-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold transition-all duration-300 flex items-center gap-3 text-lg"
-                >
-                  <RotateCcw className="w-6 h-6" />
-                  Reset Timer
-                </button>
-              </div>
-
-              {/* Session Info */}
-              <div className="text-center">
-                <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-100 rounded-full">
-                  <Target className="w-5 h-5 text-slate-600" />
-                  <span className="text-lg font-medium text-slate-700">
-                    Session {sessions + 1} • {isBreak ? 'Break' : 'Focus'}
-                  </span>
+                  <div className={`text-2xl font-semibold mt-4 ${isBreak ? 'text-sqyellow' : 'text-sqviolet-dark'}`}>{isBreak ? 'Break Time' : 'Focus Time'}</div>
                 </div>
               </div>
             </div>
+            {/* Animated Progress Ring */}
+            <svg className="absolute top-0 left-0 w-[340px] h-[340px] pointer-events-none" viewBox="0 0 340 340">
+              <circle
+                cx="170"
+                cy="170"
+                r="160"
+                fill="none"
+                stroke="#e0e7ff"
+                strokeWidth="14"
+              />
+              <circle
+                cx="170"
+                cy="170"
+                r="160"
+                fill="none"
+                stroke={isBreak ? '#fde68a' : '#7c3aed'}
+                strokeWidth="14"
+                strokeDasharray={2 * Math.PI * 160}
+                strokeDashoffset={2 * Math.PI * 160 * (1 - progress / 100)}
+                style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.4,2,.6,1)' }}
+              />
+            </svg>
           </div>
-
-          {/* Stats Sidebar */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
-            {/* XP Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-800">Focus XP</h3>
-              </div>
-              <div className="text-4xl font-bold text-slate-900 mb-3">{xp}</div>
-              <div className="text-slate-600">Total earned from focus sessions</div>
-            </div>
-
-            {/* Sessions Card */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl">
-                  <CheckCircle className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-800">Completed Sessions</h3>
-              </div>
-              <div className="text-4xl font-bold text-slate-900 mb-3">{sessions}</div>
-              <div className="text-slate-600">Focus sessions completed</div>
-            </div>
-
-            {/* Tips Card */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl shadow-xl border border-blue-200/50 p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-2xl">
-                  <Coffee className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-800">Focus Tips</h3>
-              </div>
-              <div className="space-y-4 text-slate-700">
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
-                  <span className="text-base">Find a quiet, distraction-free environment</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
-                  <span className="text-base">Use the break time to stretch and refresh</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
-                  <span className="text-base">Stay hydrated and take deep breaths</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
-                  <span className="text-base">Close unnecessary browser tabs</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-800">Session Stats</h3>
-              </div>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Focus Duration</span>
-                  <span className="font-semibold text-slate-900">25 minutes</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Break Duration</span>
-                  <span className="font-semibold text-slate-900">5 minutes</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600">XP per Session</span>
-                  <span className="font-semibold text-green-600">10 XP</span>
-                </div>
-              </div>
-            </div>
+          {/* Controls */}
+          <div className="flex gap-8 mb-10">
+            <button
+              onClick={toggleTimer}
+              className={`px-16 py-6 rounded-2xl font-bold text-2xl shadow-xl transition-all duration-300 flex items-center gap-4 tracking-wide border-2 border-transparent ${
+                isActive
+                  ? 'bg-gradient-to-r from-sqyellow to-sqpink text-white hover:from-sqyellow-dark hover:to-sqpink-dark'
+                  : 'bg-gradient-to-r from-sqblue to-sqviolet text-white hover:from-sqblue-dark hover:to-sqviolet-dark'
+              } hover:scale-105`}
+            >
+              {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
+              {isActive ? 'Pause' : 'Start Focus'}
+            </button>
+            <button
+              onClick={resetTimer}
+              className="px-16 py-6 bg-white/80 hover:bg-sqviolet-light text-sqviolet-dark rounded-2xl font-bold text-2xl shadow-xl border-2 border-sqviolet-light transition-all duration-300 flex items-center gap-4 hover:scale-105"
+            >
+              <RotateCcw className="w-8 h-8" />
+              Cancel
+            </button>
           </div>
-        </div>
+          {/* Session Info */}
+          <div className="inline-flex items-center gap-4 px-8 py-4 bg-sqviolet-light/80 rounded-full shadow text-xl font-semibold text-sqviolet-dark border border-sqviolet-light">
+            <Target className="w-6 h-6 text-sqviolet" />
+            Session {sessions + 1} • {isBreak ? 'Break' : 'Focus'}
+          </div>
+        </main>
       </div>
     </div>
   );
